@@ -37,7 +37,14 @@ if (-not $serials) {
     $choice = Read-Host '  Ждать USB [1] или подключиться по Wi-Fi [2]? (1/2)'
     if ($choice -eq '2') {
         $addr = Read-Host '  IP:порт телефона (напр. 192.168.1.109:40413)'
-        & $Adb connect $addr | Write-Host
+        for ($try = 1; $try -le 3; $try++) {
+            & $Adb connect $addr 2>&1 | Write-Host
+            if (Get-ReadySerials) { break }
+            if ($try -lt 3) {
+                Write-Host "  Попытка $try не удалась (первое рукопожатие часто таймаутится) — повторяю..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 3
+            }
+        }
     }
     $deadline = (Get-Date).AddSeconds(90)
     while ((Get-Date) -lt $deadline) {
