@@ -1,0 +1,4 @@
+# APK-артефакты (103 МБ) в git не вливаются — источник N:/dev/patched-apks/
+apk/*.apk
+apk/*.zip
+last-device.txt
