@@ -30,7 +30,7 @@ function Get-ReadySerials {
 
 # --- выбор устройства -------------------------------------------------
 Step 'Поиск телефона'
-$serials = Get-ReadySerials
+$serials = @(Get-ReadySerials)
 if (-not $serials) {
     Write-Host "  Телефон не найден. Подключите по USB (отладка по USB должна быть включена)"
     Write-Host "  и подтвердите запрос 'Разрешить отладку по USB' на телефоне."
@@ -39,7 +39,7 @@ if (-not $serials) {
         $addr = Read-Host '  IP:порт телефона (напр. 192.168.1.109:40413)'
         for ($try = 1; $try -le 3; $try++) {
             & $Adb connect $addr 2>&1 | Write-Host
-            if (Get-ReadySerials) { break }
+            if (@(Get-ReadySerials).Count -gt 0) { break }
             if ($try -lt 3) {
                 Write-Host "  Попытка $try не удалась (первое рукопожатие часто таймаутится) — повторяю..." -ForegroundColor Yellow
                 Start-Sleep -Seconds 3
@@ -48,7 +48,7 @@ if (-not $serials) {
     }
     $deadline = (Get-Date).AddSeconds(90)
     while ((Get-Date) -lt $deadline) {
-        $serials = Get-ReadySerials
+        $serials = @(Get-ReadySerials)
         if ($serials) { break }
         $st = & $Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match 'unauthorized' }
         if ($st) { Write-Host "  Телефон найден, но не подтверждён — нажмите 'Разрешить' на телефоне" -ForegroundColor Yellow }
