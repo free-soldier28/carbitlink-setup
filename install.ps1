@@ -1,7 +1,7 @@
 ﻿# install.ps1 — установка и настройка пропатченного CarBitLink по adb
 # Требования: Windows 10/11, телефон с включённой отладкой по USB/Wi-Fi.
 # Скрипт идемпотентный — можно запускать повторно.
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'  # stderr от adb не должен убивать скрипт
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $Host.UI.RawUI.WindowTitle = 'CarBitLink Setup'
 
