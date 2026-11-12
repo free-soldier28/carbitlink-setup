@@ -1,4 +1,4 @@
-# APK-артефакты (103 МБ) в git не вливаются — источник N:/dev/patched-apks/
+# APK-артефакты (103 МБ) в git не вливаются — источник: NAS, см. артефакт-манифест
 apk/*.apk
 apk/*.zip
 last-device.txt

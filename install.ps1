@@ -36,7 +36,7 @@ if (-not $serials) {
     Write-Host "  и подтвердите запрос 'Разрешить отладку по USB' на телефоне."
     $choice = Read-Host '  Ждать USB [1] или подключиться по Wi-Fi [2]? (1/2)'
     if ($choice -eq '2') {
-        $addr = Read-Host '  IP:порт телефона (напр. 192.168.1.109:40413)'
+        $addr = Read-Host '  IP:порт телефона (напр. 192.168.1.100:5555)'
         for ($try = 1; $try -le 3; $try++) {
             & $Adb connect $addr 2>&1 | Write-Host
             if (@(Get-ReadySerials).Count -gt 0) { break }
