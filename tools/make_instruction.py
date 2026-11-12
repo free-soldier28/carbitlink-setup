@@ -28,6 +28,7 @@ BORDER       = colors.HexColor('#d5d2c8')
 ACCENT       = colors.HexColor('#2f8eae')
 TEXT_PRIMARY = colors.HexColor('#1b1a18')
 TEXT_MUTED   = colors.HexColor('#838179')
+TG_URL = 'https://t.me/CarbitLink/407'
 
 S = dict(
     kicker=ParagraphStyle('kicker', fontName='Ar-B', fontSize=9, leading=12,
@@ -75,7 +76,7 @@ need = Table([[Paragraph(
     '<b>Понадобится:</b> компьютер с Windows 10/11 • USB-кабель (которым передаются '
     'данные, а не «только зарядка») • телефон Android • эта папка целиком: '
     '<b>setup.bat</b>, <b>install.ps1</b>, папки <b>apk</b> и <b>platform-tools</b> — '
-    'ничего не удаляйте и не переименовывайте', S['cell'])]],
+    'ничего не удаляйте и не переименовывайте. Актуальные сборки: ' + TG_URL, S['cell'])]],
     colWidths=[175 * mm])
 need.setStyle(TableStyle([
     ('BACKGROUND', (0, 0), (-1, -1), CARD_BG),
