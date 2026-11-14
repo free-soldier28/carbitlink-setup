@@ -81,7 +81,9 @@ if ($serials.Count -gt 1) {
     $serial = $serials[$n]
 }
 Ok "телефон: $serial"
-$serial | Out-File -Encoding ascii (Join-Path $Root 'last-device.txt')
+$TmpDir = Join-Path $Root 'tmp'
+New-Item -ItemType Directory -Force -Path $TmpDir | Out-Null
+$serial | Out-File -Encoding ascii (Join-Path $TmpDir 'last-device.txt')
 
 function Adb { & $Adb -s $serial @args }
 

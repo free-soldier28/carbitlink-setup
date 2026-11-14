@@ -2,5 +2,7 @@
 apk/*.apk
 apk/*.zip
 last-device.txt
+tmp/
 tmp-*.log
 *.log
+*.idsig
