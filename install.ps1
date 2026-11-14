@@ -138,7 +138,8 @@ Step 'Спец-доступы (appops)'
 Adb shell appops set --user 0 $Pkg android:get_usage_stats allow
 Adb shell appops set --user 0 $Pkg SYSTEM_ALERT_WINDOW allow
 Adb shell appops set --user 0 $Pkg WRITE_SETTINGS allow
-Ok 'использование приложений / поверх окон / изменение настроек — allow'
+Adb shell appops set --user 0 $Pkg PROJECT_MEDIA allow
+Ok 'использование приложений / поверх окон / настройки / зеркалирование экрана — allow'
 
 # --- чтение уведомлений --------------------------------------------------
 Step 'Чтение уведомлений (уведомления телефона на голове)'
