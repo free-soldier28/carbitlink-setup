@@ -1,4 +1,5 @@
-﻿# install.ps1 — установка и настройка пропатченного CarBitLink по adb
+﻿# install.ps1 — установка и настройка пропатченного клиента по adb.
+# Поддерживает оба клиента: CarBitLink (wws) и Yilian (китайский, net.easyconn.carman).
 # Требования: Windows 10/11, телефон с включённой отладкой по USB/Wi-Fi.
 # Скрипт идемпотентный — можно запускать повторно.
 $ErrorActionPreference = 'Continue'  # stderr от adb не должен убивать скрипт
@@ -7,9 +8,6 @@ $Host.UI.RawUI.WindowTitle = 'CarBitLink Setup'
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Adb  = Join-Path $Root 'platform-tools\adb.exe'
-$Pkg  = 'net.easyconn.carman.wws'
-$A11y = "$Pkg/net.easyconn.carman.accessibility.AccessibilityResultService"
-$Nls  = "$Pkg/net.easyconn.carman.NotificationService"
 
 function Fail($m) { Write-Host "ОШИБКА: $m" -ForegroundColor Red; Read-Host 'Enter — выход'; exit 1 }
 function Step($m)  { Write-Host "`n=== $m" -ForegroundColor Cyan }
@@ -17,9 +15,25 @@ function Ok($m)    { Write-Host "  [OK] $m" -ForegroundColor Green }
 function Warn($m)  { Write-Host "  [!!] $m" -ForegroundColor Yellow }
 
 if (-not (Test-Path $Adb)) { Fail "не найден adb.exe: $Adb" }
-$Apk = Get-ChildItem -Path (Join-Path $Root 'apk') -Filter 'carbitlink-*.apk' -ErrorAction SilentlyContinue |
+$Apk = Get-ChildItem -Path (Join-Path $Root 'apk') -Filter '*.apk' -ErrorAction SilentlyContinue |
        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $Apk) { Fail "нет APK в папке apk\ — положите carbitlink-*-patched-*.apk туда" }
+if (-not $Apk) { Fail "нет APK в папке apk\ — положите туда пропатченный APK (carbitlink-* или yilian-*)" }
+
+# --- определение приложения по имени APK ---------------------------------
+$ApkName = Split-Path -Leaf $Apk.Name
+if ($ApkName -like 'yilian*') {
+    $Pkg   = 'net.easyconn.carman'          # китайский клиент (Yilian)
+    $A11y  = $null                           # тач-инжект в yilian не через accessibility
+    $Nls   = "$Pkg/net.easyconn.carman.NotificationService"
+    $AppName = 'Yilian (китайский клиент)'
+    $VerMark = 'patched: v1'
+} else {
+    $Pkg   = 'net.easyconn.carman.wws'       # CarBitLink (wws)
+    $A11y  = "$Pkg/net.easyconn.carman.accessibility.AccessibilityResultService"
+    $Nls   = "$Pkg/net.easyconn.carman.NotificationService"
+    $AppName = 'CarBitLink (wws)'
+    $VerMark = 'patched: p11'
+}
 
 & $Adb start-server | Out-Null
 
@@ -75,6 +89,7 @@ function Adb { & $Adb -s $serial @args }
 $model = (Adb shell getprop ro.product.model).Trim()
 $ver   = (Adb shell getprop ro.build.version.release).Trim()
 Write-Host "  $model, Android $ver"
+Ok "приложение: $AppName"
 
 # --- установка APK ----------------------------------------------------
 Step "Установка $($Apk.Name)"
@@ -128,20 +143,24 @@ Step 'Чтение уведомлений (уведомления телефон
 Adb shell cmd notification allow_listener $Nls
 Ok 'NotificationService добавлен в слушатели'
 
-# --- accessibility -------------------------------------------------------
-Step 'Touch-back: включение CarBitLink Accessibility'
-$cur = ((Adb shell settings get secure enabled_accessibility_services) | Out-String).Trim()
-if ($cur -eq 'null' -or [string]::IsNullOrWhiteSpace($cur)) { $new = $A11y }
-elseif ($cur.Contains($A11y)) { $new = $cur }
-else { $new = "$cur`:$A11y" }
-Adb shell settings put secure enabled_accessibility_services $new
-Adb shell settings put secure accessibility_enabled 1
-Ok "enabled_accessibility_services = $new"
-
 # --- батарея -------------------------------------------------------------
 Step 'Отключение оптимизации батареи для приложения'
 Adb shell dumpsys deviceidle whitelist +"$Pkg" | Out-Null
 Ok 'добавлено в whitelist'
+
+# --- accessibility (только CarBitLink/wws; yilian тач-инжект не через a11y) ---
+if ($A11y) {
+    Step 'Touch-back: включение CarBitLink Accessibility'
+    $cur = ((Adb shell settings get secure enabled_accessibility_services) | Out-String).Trim()
+    if ($cur -eq 'null' -or [string]::IsNullOrWhiteSpace($cur)) { $new = $A11y }
+    elseif ($cur.Contains($A11y)) { $new = $cur }
+    else { $new = "$cur`:$A11y" }
+    Adb shell settings put secure enabled_accessibility_services $new
+    Adb shell settings put secure accessibility_enabled 1
+    Ok "enabled_accessibility_services = $new"
+} else {
+    Warn 'accessibility для этого APK не настраивается (не CarBitLink/wws)'
+}
 
 # --- запуск и проверка ----------------------------------------------------
 Step 'Запуск приложения'
@@ -149,12 +168,14 @@ Adb shell "monkey -p $Pkg -c android.intent.category.LAUNCHER 1" 2>&1 | Out-Null
 Start-Sleep -Seconds 5
 
 Step 'Проверка'
-$bound = (Adb shell "dumpsys accessibility" | Out-String) -match 'CarBitLink Accessibility'
-if ($bound) { Ok 'accessibility-сервис привязан (touch-back готов)' }
-else { Warn 'accessibility не привязан! Откройте Настройки -> Доступность -> CarBitLink Accessibility и включите вручную' }
+if ($A11y) {
+    $bound = (Adb shell "dumpsys accessibility" | Out-String) -match 'CarBitLink Accessibility'
+    if ($bound) { Ok 'accessibility-сервис привязан (touch-back готов)' }
+    else { Warn 'accessibility не привязан! Откройте Настройки -> Доступность -> CarBitLink Accessibility и включите вручную' }
+}
 $inst = ((Adb shell "pm dump $Pkg" | Select-String -Pattern 'installerPackage' | Select-Object -First 1) | Out-String).Trim()
 Write-Host "  $inst"
 Write-Host ""
-Write-Host '=== Готово. Проверьте на экране About: строка "patched: p9" под версией ===' -ForegroundColor Cyan
+Write-Host "=== Готово. Проверьте в приложении: строка \"$VerMark\" под версией ===" -ForegroundColor Cyan
 Write-Host 'Подключите телефон к голове. Зеркало приложений работает без "Доступа к истории использования".'
 Read-Host 'Enter — выход'
