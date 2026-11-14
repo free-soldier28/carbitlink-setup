@@ -176,9 +176,7 @@ if ($A11y) {
     if ($bound) { Ok 'accessibility-сервис привязан (touch-back готов)' }
     else { Warn 'accessibility не привязан! Откройте Настройки -> Доступность -> CarBitLink Accessibility и включите вручную' }
 }
-$pmv = ((Adb shell "appops get --user 0 $Pkg PROJECT_MEDIA" | Out-String).Trim())
-if ($pmv -match 'allow') { Ok 'PROJECT_MEDIA allow (зеркалирование без подтверждения)' }
-else { Warn "PROJECT_MEDIA: $pmv — подтверждение зеркала будет запрашиваться" }
+& (Join-Path $Root 'tests\check-project-media.ps1') -Serial $serial -AdbPath $Adb -Pkg $Pkg
 $inst = ((Adb shell "pm dump $Pkg" | Select-String -Pattern 'installerPackage' | Select-Object -First 1) | Out-String).Trim()
 Write-Host "  $inst"
 Write-Host ""
